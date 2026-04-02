@@ -1,0 +1,12 @@
+#Contenido para que no se suban archivos basura al repositorio de GitHub. Este archivo se llama .gitignore y se coloca en la raíz del proyecto.
+
+# Python
+__pycache__/
+venv/
+*.pyc
+.env
+
+# React / Node
+node_modules/
+dist/
+.DS_Store
