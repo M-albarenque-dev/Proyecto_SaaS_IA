@@ -1,2 +1,7 @@
-# Services — lógica de negocio desacoplada de los endpoints
-# Ejemplo: from app.services.turno_service import crear_turno, verificar_disponibilidad
+"""
+Services — lógica de negocio desacoplada de los endpoints HTTP.
+Permite reutilizar la lógica desde el chatbot (S2) y testearla aislada.
+"""
+from app.services import turnos_service, auth_service
+
+__all__ = ["turnos_service", "auth_service"]

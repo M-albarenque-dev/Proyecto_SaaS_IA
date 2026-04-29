@@ -6,6 +6,12 @@ venv/
 *.pyc
 .env
 
+# SQLite local (smoke tests, no debe ir al repo)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
 # React / Node
 node_modules/
 dist/
