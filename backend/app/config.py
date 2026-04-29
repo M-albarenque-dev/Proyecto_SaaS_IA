@@ -5,13 +5,17 @@ class Settings(BaseSettings):
     APP_NAME: str = "TurnoIA"
     ENVIRONMENT: str = "development"
 
-    # Base de datos (leer del archivo .env)
+    # Base de datos
     DATABASE_URL: str
+
+    # Twilio
+    TWILIO_ACCOUNT_SID: str
+    TWILIO_AUTH_TOKEN: str
+    TWILIO_WHATSAPP_NUMBER: str
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
 
-# Instancia singleton — importar con: from app.config import settings
 settings = Settings()
