@@ -1,19 +1,24 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-
-// Las páginas se importan aquí a medida que se crean en src/pages/
-// import Login from './pages/Login'
-// import Agenda from './pages/Agenda'
-// import DetalleTurno from './pages/DetalleTurno'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import Login from './pages/Login'
+import Agenda from './pages/Agenda'
+import NuevoTurno from './pages/NuevoTurno'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Placeholder — reemplazar con las rutas reales */}
-        <Route path="/" element={<h1>TurnoIA — En construcción</h1>} />
-        {/* <Route path="/login" element={<Login />} /> */}
-        {/* <Route path="/agenda" element={<Agenda />} /> */}
-        {/* <Route path="/turno/:id" element={<DetalleTurno />} /> */}
+        {/* Ruta raíz → redirige a /login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Autenticación */}
+        <Route path="/login" element={<Login />} />
+
+        {/* App principal */}
+        <Route path="/agenda" element={<Agenda />} />
+        <Route path="/nuevo-turno" element={<NuevoTurno />} />
+
+        {/* Fallback: cualquier ruta desconocida → /login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   )
