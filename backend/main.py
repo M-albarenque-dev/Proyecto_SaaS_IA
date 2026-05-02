@@ -18,10 +18,11 @@ app.add_middleware(
 )
 
 # Registro de routers
-from app.routers import auth, turnos
+from app.routers import auth, turnos, profesionales, clientes
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(turnos.router, prefix="/api/turnos", tags=["turnos"])
-# app.include_router(profesionales.router, prefix="/api/profesionales", tags=["profesionales"])  # S3
+app.include_router(profesionales.router, prefix="/api/profesionales", tags=["profesionales"])
+app.include_router(clientes.router, prefix="/api/clientes", tags=["clientes"])
 
 
 @app.get("/", tags=["health"])
