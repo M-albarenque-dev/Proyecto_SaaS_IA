@@ -71,12 +71,6 @@ def upgrade() -> None:
     op.create_index("ix_clientes_telefono", "clientes", ["telefono"])
 
     # ---- turnos ----
-    estado_turno = sa.Enum(
-        "pendiente", "confirmado", "cancelado", "reprogramado", "completado",
-        name="estado_turno",
-    )
-    estado_turno.create(op.get_bind(), checkfirst=True)
-
     op.create_table(
         "turnos",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -85,7 +79,7 @@ def upgrade() -> None:
         sa.Column("cliente_id", sa.Integer(), nullable=False),
         sa.Column("fecha_hora", sa.DateTime(timezone=True), nullable=False),
         sa.Column("duracion_min", sa.Integer(), nullable=False, server_default="30"),
-        sa.Column("estado", estado_turno, nullable=False, server_default="pendiente"),
+        sa.Column("estado", sa.Enum("pendiente", "confirmado", "cancelado", "reprogramado", "completado", name="estado_turno"), nullable=False, server_default="pendiente"),
         sa.Column("notas", sa.String(length=500), nullable=True),
         sa.Column("origen", sa.String(length=20), nullable=False, server_default="panel"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
