@@ -34,7 +34,9 @@ const styles = {
   },
   headerActions: {
     display: "flex",
+    alignItems: "center",
     gap: "0.75rem",
+    flexWrap: "wrap",
   },
   btnPrimary: {
     padding: "0.6rem 1.2rem",
@@ -55,6 +57,15 @@ const styles = {
     fontWeight: 600,
     fontSize: "0.9rem",
     cursor: "pointer",
+  },
+  inputFecha: {
+    padding: "0.55rem 0.75rem",
+    border: "1px solid #d1d5db",
+    borderRadius: "8px",
+    fontSize: "0.9rem",
+    outline: "none",
+    cursor: "pointer",
+    background: "#fff",
   },
   card: {
     background: "#fff",
@@ -134,22 +145,33 @@ function formatFecha(fechaStr) {
   }
 }
 
+function formatFechaTitulo(fechaISO) {
+  if (!fechaISO) return "";
+  const [year, month, day] = fechaISO.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 export default function Agenda() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(
+    new Date().toISOString().split("T")[0]
+  );
 
   useEffect(() => {
     fetchTurnos();
-  }, []);
+  }, [fechaSeleccionada]);
 
   const fetchTurnos = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await api.get("/turnos");
+      const res = await api.get("/turnos", {
+        params: { fecha: fechaSeleccionada },
+      });
       setTurnos(res.data || []);
     } catch (err) {
       const msg =
@@ -171,8 +193,16 @@ export default function Agenda() {
   return (
     <div style={styles.wrapper}>
       <div style={styles.header}>
-        <h1 style={styles.title}>📅 Agenda de Turnos</h1>
+        <h1 style={styles.title}>
+          📅 Agenda — {formatFechaTitulo(fechaSeleccionada)}
+        </h1>
         <div style={styles.headerActions}>
+          <input
+            type="date"
+            value={fechaSeleccionada}
+            onChange={(e) => setFechaSeleccionada(e.target.value)}
+            style={styles.inputFecha}
+          />
           <button
             style={styles.btnPrimary}
             onClick={() => navigate("/nuevo-turno")}
@@ -203,7 +233,7 @@ export default function Agenda() {
         {loading ? (
           <div style={styles.loading}>Cargando turnos...</div>
         ) : turnos.length === 0 ? (
-          <div style={styles.emptyMsg}>No hay turnos registrados todavía.</div>
+          <div style={styles.emptyMsg}>No hay turnos para esta fecha.</div>
         ) : (
           <table style={styles.table}>
             <thead>
