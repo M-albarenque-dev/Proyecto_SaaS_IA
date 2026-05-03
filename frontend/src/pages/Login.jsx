@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-
-const API_BASE = 'https://proyectosaasia-production.up.railway.app'
+import { useNavigate, useLocation } from 'react-router-dom'
+import api from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const styles = {
   wrapper: {
@@ -99,6 +98,9 @@ const styles = {
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
+
   const [mode, setMode] = useState('login') // 'login' | 'register'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -121,14 +123,16 @@ export default function Login() {
     setSuccess('')
     setLoading(true)
     try {
-      const res = await axios.post(`${API_BASE}/api/auth/login`, {
+      const res = await api.post('/auth/login', {
         email: loginData.email,
         password: loginData.password,
       })
       const token = res.data.access_token || res.data.token
       if (!token) throw new Error('No se recibió token del servidor.')
-      localStorage.setItem('token', token)
-      navigate('/agenda')
+      login(token)
+      // Volver a la ruta de origen o ir a /agenda por defecto
+      const destination = location.state?.from?.pathname || '/agenda'
+      navigate(destination, { replace: true })
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
@@ -147,7 +151,7 @@ export default function Login() {
     setSuccess('')
     setLoading(true)
     try {
-      await axios.post(`${API_BASE}/api/auth/register`, {
+      await api.post('/auth/register', {
         nombre: registerData.nombre,
         email: registerData.email,
         password: registerData.password,
