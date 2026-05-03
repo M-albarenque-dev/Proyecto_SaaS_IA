@@ -9,19 +9,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta raíz → redirige a /login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-
-        {/* Autenticación */}
         <Route path="/login" element={<Login />} />
-
-        {/* App principal */}
         <Route path="/agenda" element={<Agenda />} />
         <Route path="/nuevo-turno" element={<NuevoTurno />} />
         <Route path="/profesionales" element={<Profesionales />} />
         <Route path="/clientes" element={<Clientes />} />
-
-        {/* Fallback: cualquier ruta desconocida → /login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

@@ -180,7 +180,7 @@ export default function Agenda() {
   return (
     <div style={styles.wrapper}>
       <div style={styles.header}>
-        <h1 style={styles.title}>📅 Agenda de Turnos</h1>
+        <h1 style={styles.title}>Agenda de Turnos</h1>
         <div style={styles.headerActions}>
           <button style={styles.btnPrimary} onClick={() => navigate('/nuevo-turno')}>
             + Nuevo turno
@@ -192,7 +192,7 @@ export default function Agenda() {
             Clientes
           </button>
           <button style={styles.btnDanger} onClick={handleLogout}>
-            Cerrar sesión
+            Cerrar sesion
           </button>
         </div>
       </div>
@@ -203,7 +203,7 @@ export default function Agenda() {
         {loading ? (
           <div style={styles.loading}>Cargando turnos...</div>
         ) : turnos.length === 0 ? (
-          <div style={styles.emptyMsg}>No hay turnos registrados todavía.</div>
+          <div style={styles.emptyMsg}>No hay turnos registrados todavia.</div>
         ) : (
           <table style={styles.table}>
             <thead>
@@ -221,7 +221,18 @@ export default function Agenda() {
                 <tr key={t.id ?? i}>
                   <td style={styles.td}>{formatFecha(t.fecha_inicio || t.fecha)}</td>
                   <td style={styles.td}>{formatFecha(t.fecha_fin)}</td>
-                  <td style={styles.td}>{t.cliente?.nombre || t.cliente_id || '—'}</td>
-                  <td style={styles.td}>{t.profesional?.nombre || t.profesional_id || '—'}</td>
+                  <td style={styles.td}>{t.cliente?.nombre || t.cliente_id || '-'}</td>
+                  <td style={styles.td}>{t.profesional?.nombre || t.profesional_id || '-'}</td>
                   <td style={styles.td}>
-                    <span style={st
+                    <span style={styles.badge(t.estado)}>{t.estado || '-'}</span>
+                  </td>
+                  <td style={styles.td}>{t.notas || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -292,4 +292,9 @@ export default function NuevoTurno() {
             >
               Cancelar
             </button>
-         
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
