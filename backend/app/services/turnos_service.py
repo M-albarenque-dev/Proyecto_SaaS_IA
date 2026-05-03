@@ -1,19 +1,19 @@
 """
-Lógica de negocio para Turnos.
-Mantener la lógica fuera del router permite reusarla desde el chatbot (S2)
+Logica de negocio para Turnos.
+Mantener la logica fuera del router permite reusarla desde el chatbot (S2)
 y testearla sin levantar la API.
 """
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models import Turno, Profesional, Cliente, EstadoTurno
 from app.schemas.turno import TurnoCreate, TurnoUpdate
 
 
 class TurnoConflicto(Exception):
-    """Se intentó crear un turno superpuesto con otro existente."""
+    """Se intento crear un turno superpuesto con otro existente."""
 
 
 class RecursoNoEncontrado(Exception):
@@ -30,7 +30,7 @@ def _validar_pertenencia(
 ) -> None:
     """
     Verifica que profesional y cliente existan y pertenezcan al negocio.
-    Multitenancy: ningún negocio puede tocar recursos de otro.
+    Multitenancy: ningun negocio puede tocar recursos de otro.
     """
     prof = (
         db.query(Profesional)
@@ -58,7 +58,7 @@ def _hay_solapamiento(
 ) -> bool:
     """
     Detecta si el rango [inicio, inicio+duracion) pisa otro turno activo.
-    Trae candidatos cercanos (ventana ±8h) y compara en Python para soportar
+    Trae candidatos cercanos (ventana 8h) y compara en Python para soportar
     SQLite/PostgreSQL sin tocar SQL crudo.
     """
     inicio = _aware(inicio)
@@ -66,9 +66,10 @@ def _hay_solapamiento(
     ventana_inicio = inicio - timedelta(hours=8)
     ventana_fin = fin + timedelta(hours=8)
 
+    estados_activos = [EstadoTurno.PENDIENTE, EstadoTurno.CONFIRMADO]
     q = db.query(Turno).filter(
         Turno.profesional_id == profesional_id,
-        Turno.estado.in_([EstadoTurno.PENDIENTE, EstadoTurno.CONFIRMADO]),
+        Turno.estado.in_(estados_activos),
         Turno.fecha_hora >= ventana_inicio,
         Turno.fecha_hora <= ventana_fin,
     )
@@ -78,7 +79,7 @@ def _hay_solapamiento(
     for t in q.all():
         t_inicio = _aware(t.fecha_hora)
         t_fin = t_inicio + timedelta(minutes=t.duracion_min)
-        # Solapamiento clásico: A.start < B.end AND A.end > B.start
+        # Solapamiento clasico: A.start < B.end AND A.end > B.start
         if t_inicio < fin and t_fin > inicio:
             return True
     return False
@@ -107,7 +108,13 @@ def crear_turno(db: Session, negocio_id: int, payload: TurnoCreate) -> Turno:
     db.add(turno)
     db.commit()
     db.refresh(turno)
-    return turno
+    # BUG 2: Recargar con relaciones para que TurnoOut serialice cliente/profesional
+    return (
+        db.query(Turno)
+        .options(selectinload(Turno.cliente), selectinload(Turno.profesional))
+        .filter(Turno.id == turno.id)
+        .first()
+    )
 
 
 def listar_turnos(
@@ -120,11 +127,16 @@ def listar_turnos(
     skip: int = 0,
     limit: int = 100,
 ) -> List[Turno]:
-    q = db.query(Turno).filter(Turno.negocio_id == negocio_id)
+    # BUG 2: selectinload evita N+1 al serializar cliente y profesional
+    q = (
+        db.query(Turno)
+        .options(selectinload(Turno.cliente), selectinload(Turno.profesional))
+        .filter(Turno.negocio_id == negocio_id)
+    )
     if desde:
         q = q.filter(Turno.fecha_hora >= desde)
     if hasta:
-        q = q.filter(Turno.fecha_hora < hasta)
+        q = q.filter(Turno.fecha_hora <= hasta)
     if estado:
         q = q.filter(Turno.estado == estado)
     if profesional_id:
@@ -133,8 +145,10 @@ def listar_turnos(
 
 
 def obtener_turno(db: Session, negocio_id: int, turno_id: int) -> Turno:
+    # BUG 2: selectinload para relaciones en detalle de turno
     turno = (
         db.query(Turno)
+        .options(selectinload(Turno.cliente), selectinload(Turno.profesional))
         .filter(Turno.id == turno_id, Turno.negocio_id == negocio_id)
         .first()
     )
@@ -157,7 +171,8 @@ def actualizar_turno(
 
     nueva_fecha = data.get("fecha_hora", turno.fecha_hora)
     nueva_duracion = data.get("duracion_min", turno.duracion_min)
-    if {"fecha_hora", "duracion_min", "profesional_id"} & data.keys():
+    campos_horario = set(["fecha_hora", "duracion_min", "profesional_id"])
+    if campos_horario & set(data.keys()):
         if _hay_solapamiento(
             db, nuevo_prof, nueva_fecha, nueva_duracion, excluir_id=turno.id
         ):
@@ -168,11 +183,12 @@ def actualizar_turno(
 
     db.commit()
     db.refresh(turno)
-    return turno
+    # Retornar con relaciones cargadas
+    return obtener_turno(db, negocio_id, turno_id)
 
 
 def eliminar_turno(db: Session, negocio_id: int, turno_id: int) -> None:
-    """Soft-delete: marca como cancelado. No borra históricamente."""
+    """Soft-delete: marca como cancelado. No borra historicamente."""
     turno = obtener_turno(db, negocio_id, turno_id)
     turno.estado = EstadoTurno.CANCELADO
     db.commit()

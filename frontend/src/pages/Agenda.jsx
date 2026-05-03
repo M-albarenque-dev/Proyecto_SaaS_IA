@@ -140,18 +140,16 @@ const styles = {
   },
 };
 
-function formatFecha(fechaStr) {
+// Muestra solo la hora en formato HH:MM (ej: "10:00")
+function formatHora(fechaStr) {
   if (!fechaStr) return "-";
   try {
-    return new Date(fechaStr).toLocaleString("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+    return new Date(fechaStr).toLocaleTimeString("es-AR", {
       hour: "2-digit",
       minute: "2-digit",
     });
   } catch {
-    return fechaStr;
+    return "-";
   }
 }
 
@@ -179,6 +177,7 @@ export default function Agenda() {
     setLoading(true);
     setError("");
     try {
+      // El backend acepta ?fecha=YYYY-MM-DD y filtra el dia completo
       const res = await api.get("/turnos", {
         params: { fecha: fechaSeleccionada },
       });
@@ -248,8 +247,8 @@ export default function Agenda() {
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Fecha inicio</th>
-                <th style={styles.th}>Fecha fin</th>
+                <th style={styles.th}>Inicio</th>
+                <th style={styles.th}>Fin</th>
                 <th style={styles.th}>Cliente</th>
                 <th style={styles.th}>Profesional</th>
                 <th style={styles.th}>Estado</th>
@@ -261,14 +260,16 @@ export default function Agenda() {
               {turnos.map((t, i) => (
                 <tr key={t.id ?? i}>
                   <td style={styles.td}>
-                    {formatFecha(t.fecha_inicio || t.fecha)}
-                  </td>
-                  <td style={styles.td}>{formatFecha(t.fecha_fin)}</td>
-                  <td style={styles.td}>
-                    {t.cliente?.nombre || t.cliente_id || "-"}
+                    {formatHora(t.fecha_inicio)}
                   </td>
                   <td style={styles.td}>
-                    {t.profesional?.nombre || t.profesional_id || "-"}
+                    {formatHora(t.fecha_fin)}
+                  </td>
+                  <td style={styles.td}>
+                    {t.cliente?.nombre ?? "-"}
+                  </td>
+                  <td style={styles.td}>
+                    {t.profesional?.nombre ?? "-"}
                   </td>
                   <td style={styles.td}>
                     <span style={styles.badge(t.estado)}>
