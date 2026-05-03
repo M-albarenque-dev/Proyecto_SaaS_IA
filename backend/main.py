@@ -11,7 +11,10 @@ app = FastAPI(
 # Configuración CORS para que el frontend React pueda consumir la API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Puerto por defecto de Vite
+    allow_origins=[
+        "http://localhost:5173",                   # Vite local
+        "https://proyecto-saa-s-ia.vercel.app",    # Producción Vercel
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
