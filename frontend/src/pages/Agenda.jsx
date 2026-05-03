@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'https://proyectosaasia-production.up.railway.app'
 
 const ESTADO_COLORS = {
   pendiente:  { bg: '#fef9c3', color: '#92400e' },
@@ -224,15 +224,4 @@ export default function Agenda() {
                   <td style={styles.td}>{t.cliente?.nombre || t.cliente_id || '—'}</td>
                   <td style={styles.td}>{t.profesional?.nombre || t.profesional_id || '—'}</td>
                   <td style={styles.td}>
-                    <span style={styles.badge(t.estado)}>{t.estado || '—'}</span>
-                  </td>
-                  <td style={styles.td}>{t.notas || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  )
-}
+                    <span style={st
