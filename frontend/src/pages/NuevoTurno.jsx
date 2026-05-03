@@ -66,6 +66,18 @@ const styles = {
     boxSizing: "border-box",
     width: "100%",
   },
+  select: {
+    padding: "0.6rem 0.75rem",
+    border: "1px solid #d1d5db",
+    borderRadius: "8px",
+    fontSize: "0.95rem",
+    outline: "none",
+    boxSizing: "border-box",
+    width: "100%",
+    cursor: "pointer",
+    appearance: "none",
+    background: "#fff",
+  },
   textarea: {
     padding: "0.6rem 0.75rem",
     border: "1px solid #d1d5db",
@@ -128,6 +140,10 @@ export default function NuevoTurno() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [profesionales, setProfesionales] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [loadingSelects, setLoadingSelects] = useState(true);
+
   const [form, setForm] = useState({
     fecha_hora: "",
     duracion_min: 30,
@@ -138,7 +154,28 @@ export default function NuevoTurno() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) navigate("/login");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const cargarSelects = async () => {
+      setLoadingSelects(true);
+      try {
+        const [resProfesionales, resClientes] = await Promise.all([
+          api.get("/profesionales"),
+          api.get("/clientes"),
+        ]);
+        setProfesionales(resProfesionales.data || []);
+        setClientes(resClientes.data || []);
+      } catch {
+        setError("No se pudieron cargar los profesionales/clientes. Intentá recargar la página.");
+      } finally {
+        setLoadingSelects(false);
+      }
+    };
+
+    cargarSelects();
   }, [navigate]);
 
   const handleChange = (e) => {
@@ -218,31 +255,45 @@ export default function NuevoTurno() {
             </div>
 
             <div style={styles.field}>
-              <label style={styles.label}>ID Profesional *</label>
-              <input
-                style={styles.input}
-                type="number"
+              <label style={styles.label}>Profesional *</label>
+              <select
+                style={styles.select}
                 name="profesional_id"
-                placeholder="ej: 1"
                 value={form.profesional_id}
                 onChange={handleChange}
+                disabled={loadingSelects}
                 required
-              />
-              <span style={styles.hint}>ID numérico del profesional</span>
+              >
+                <option value="" disabled>
+                  {loadingSelects ? "Cargando..." : "— Seleccionar profesional —"}
+                </option>
+                {profesionales.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div style={{ ...styles.field, ...styles.fieldFull }}>
-              <label style={styles.label}>ID Cliente *</label>
-              <input
-                style={styles.input}
-                type="number"
+              <label style={styles.label}>Cliente *</label>
+              <select
+                style={styles.select}
                 name="cliente_id"
-                placeholder="ej: 1"
                 value={form.cliente_id}
                 onChange={handleChange}
+                disabled={loadingSelects}
                 required
-              />
-              <span style={styles.hint}>ID numérico del cliente</span>
+              >
+                <option value="" disabled>
+                  {loadingSelects ? "Cargando..." : "— Seleccionar cliente —"}
+                </option>
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div style={{ ...styles.field, ...styles.fieldFull }}>
@@ -258,7 +309,11 @@ export default function NuevoTurno() {
           </div>
 
           <div style={styles.actions}>
-            <button style={styles.btnPrimary} type="submit" disabled={loading}>
+            <button
+              style={styles.btnPrimary}
+              type="submit"
+              disabled={loading || loadingSelects}
+            >
               {loading ? "Guardando..." : "Crear turno"}
             </button>
             <button
