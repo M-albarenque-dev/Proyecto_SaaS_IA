@@ -128,10 +128,20 @@ const styles = {
     padding: "3rem",
     color: "#6b7280",
   },
+  btnEdit: {
+    padding: "0.3rem 0.75rem",
+    background: "#fff",
+    color: "#4f46e5",
+    border: "1px solid #4f46e5",
+    borderRadius: "6px",
+    fontWeight: 600,
+    fontSize: "0.8rem",
+    cursor: "pointer",
+  },
 };
 
 function formatFecha(fechaStr) {
-  if (!fechaStr) return "—";
+  if (!fechaStr) return "-";
   try {
     return new Date(fechaStr).toLocaleString("es-AR", {
       day: "2-digit",
@@ -194,7 +204,7 @@ export default function Agenda() {
     <div style={styles.wrapper}>
       <div style={styles.header}>
         <h1 style={styles.title}>
-          📅 Agenda — {formatFechaTitulo(fechaSeleccionada)}
+          Agenda - {formatFechaTitulo(fechaSeleccionada)}
         </h1>
         <div style={styles.headerActions}>
           <input
@@ -222,7 +232,7 @@ export default function Agenda() {
             Clientes
           </button>
           <button style={styles.btnDanger} onClick={handleLogout}>
-            Cerrar sesión
+            Cerrar sesion
           </button>
         </div>
       </div>
@@ -244,6 +254,7 @@ export default function Agenda() {
                 <th style={styles.th}>Profesional</th>
                 <th style={styles.th}>Estado</th>
                 <th style={styles.th}>Notas</th>
+                <th style={styles.th}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -254,17 +265,25 @@ export default function Agenda() {
                   </td>
                   <td style={styles.td}>{formatFecha(t.fecha_fin)}</td>
                   <td style={styles.td}>
-                    {t.cliente?.nombre || t.cliente_id || "—"}
+                    {t.cliente?.nombre || t.cliente_id || "-"}
                   </td>
                   <td style={styles.td}>
-                    {t.profesional?.nombre || t.profesional_id || "—"}
+                    {t.profesional?.nombre || t.profesional_id || "-"}
                   </td>
                   <td style={styles.td}>
                     <span style={styles.badge(t.estado)}>
-                      {t.estado || "—"}
+                      {t.estado || "-"}
                     </span>
                   </td>
-                  <td style={styles.td}>{t.notas || "—"}</td>
+                  <td style={styles.td}>{t.notas || "-"}</td>
+                  <td style={styles.td}>
+                    <button
+                      style={styles.btnEdit}
+                      onClick={() => navigate("/turnos/" + t.id)}
+                    >
+                      Ver / Editar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

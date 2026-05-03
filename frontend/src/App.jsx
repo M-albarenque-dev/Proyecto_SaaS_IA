@@ -6,6 +6,7 @@ import Agenda from './pages/Agenda'
 import NuevoTurno from './pages/NuevoTurno'
 import Profesionales from './pages/Profesionales'
 import Clientes from './pages/Clientes'
+import DetalleTurno from './pages/DetalleTurno'
 
 function App() {
   return (
@@ -48,6 +49,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Clientes />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/turnos/:id"
+            element={
+              <PrivateRoute>
+                <DetalleTurno />
               </PrivateRoute>
             }
           />
