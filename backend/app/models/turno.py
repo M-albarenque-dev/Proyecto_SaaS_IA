@@ -56,7 +56,11 @@ class Turno(Base, IDMixin, TimestampMixin):
     fecha_hora = Column(DateTime(timezone=True), nullable=False, index=True)
     duracion_min = Column(Integer, default=30, nullable=False)
     estado = Column(
-        SAEnum(EstadoTurno, name="estado_turno"),
+        SAEnum(
+            EstadoTurno,
+            name="estado_turno",
+            values_callable=lambda x: [e.value for e in x],
+        ),
         default=EstadoTurno.PENDIENTE,
         nullable=False,
         index=True,

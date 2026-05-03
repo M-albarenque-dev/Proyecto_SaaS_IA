@@ -68,7 +68,7 @@ def _hay_solapamiento(
 
     q = db.query(Turno).filter(
         Turno.profesional_id == profesional_id,
-        Turno.estado.in_([EstadoTurno.PENDIENTE.value, EstadoTurno.CONFIRMADO.value]),
+        Turno.estado.in_([EstadoTurno.PENDIENTE, EstadoTurno.CONFIRMADO]),
         Turno.fecha_hora >= ventana_inicio,
         Turno.fecha_hora <= ventana_fin,
     )
