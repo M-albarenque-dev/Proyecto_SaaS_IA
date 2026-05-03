@@ -1,9 +1,9 @@
 """
 Router REST para Turnos.
-Todos los endpoints están protegidos por JWT (Depends(get_current_negocio))
+Todos los endpoints estan protegidos por JWT (Depends(get_current_negocio))
 y operan SOLO sobre los recursos del negocio autenticado (multitenancy).
 """
-from datetime import datetime
+from datetime import date, datetime, time, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -46,6 +46,8 @@ def crear_turno(
     summary="Listar turnos del negocio (con filtros opcionales)",
 )
 def listar_turnos(
+    # BUG 3: nuevo parametro ?fecha=YYYY-MM-DD; convierte a desde/hasta automaticamente
+    fecha: Optional[date] = Query(default=None, description="Filtrar por dia exacto (YYYY-MM-DD)"),
     desde: Optional[datetime] = Query(default=None),
     hasta: Optional[datetime] = Query(default=None),
     estado: Optional[EstadoTurno] = Query(default=None),
@@ -55,6 +57,11 @@ def listar_turnos(
     db: Session = Depends(get_db),
     negocio: Negocio = Depends(get_current_negocio),
 ):
+    # Si se recibe ?fecha=, construir rango 00:00:00 - 23:59:59 en UTC
+    if fecha is not None:
+        desde = datetime.combine(fecha, time.min).replace(tzinfo=timezone.utc)
+        hasta = datetime.combine(fecha, time.max).replace(tzinfo=timezone.utc)
+
     return turnos_service.listar_turnos(
         db,
         negocio.id,
