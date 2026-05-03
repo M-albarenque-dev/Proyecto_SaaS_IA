@@ -185,6 +185,12 @@ export default function Agenda() {
           <button style={styles.btnPrimary} onClick={() => navigate('/nuevo-turno')}>
             + Nuevo turno
           </button>
+          <button style={styles.btnPrimary} onClick={() => navigate('/profesionales')}>
+            Profesionales
+          </button>
+          <button style={styles.btnPrimary} onClick={() => navigate('/clientes')}>
+            Clientes
+          </button>
           <button style={styles.btnDanger} onClick={handleLogout}>
             Cerrar sesión
           </button>
