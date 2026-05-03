@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import PrivateRoute from './components/PrivateRoute'
 import Login from './pages/Login'
 import Agenda from './pages/Agenda'
 import NuevoTurno from './pages/NuevoTurno'
@@ -7,24 +9,54 @@ import Clientes from './pages/Clientes'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Ruta raíz → redirige a /login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Ruta raíz → redirige a /login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Autenticación */}
-        <Route path="/login" element={<Login />} />
+          {/* Autenticación — pública */}
+          <Route path="/login" element={<Login />} />
 
-        {/* App principal */}
-        <Route path="/agenda" element={<Agenda />} />
-        <Route path="/nuevo-turno" element={<NuevoTurno />} />
-        <Route path="/profesionales" element={<Profesionales />} />
-        <Route path="/clientes" element={<Clientes />} />
+          {/* App principal — protegida */}
+          <Route
+            path="/agenda"
+            element={
+              <PrivateRoute>
+                <Agenda />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/nuevo-turno"
+            element={
+              <PrivateRoute>
+                <NuevoTurno />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profesionales"
+            element={
+              <PrivateRoute>
+                <Profesionales />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/clientes"
+            element={
+              <PrivateRoute>
+                <Clientes />
+              </PrivateRoute>
+            }
+          />
 
-        {/* Fallback: cualquier ruta desconocida → /login */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Fallback: cualquier ruta desconocida → /login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
