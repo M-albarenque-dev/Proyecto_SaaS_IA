@@ -15,4 +15,4 @@ venv/
 # React / Node
 node_modules/
 dist/
-.DS_Store
+.DS_Storefrontend/vite.config.js.timestamp*
