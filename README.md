@@ -1,137 +1,204 @@
-# TurnoIA — Grupo 2
+# TurnoIA — Asistente de Turnos con IA
 
-=================================================================================================================
+**Materia:** Desarrollo de Software 2026 | **Grupo 2**
+**Entrega final:** 17 de junio de 2026
+**Metodología:** Scrum — Sprints semanales
 
-# Este README te explica cómo preparar tu computadora para poder correr el proyecto. Seguí los pasos en orden.
+---
 
-=================================================================================================================
+## Descripción
 
-Asistente de turnos con IA. Plataforma SaaS · WhatsApp Chatbot · Panel Web.
+TurnoIA es una plataforma SaaS que permite a consultorios y negocios de servicios gestionar sus turnos a través de dos canales: un panel web y un chatbot de WhatsApp.
 
-**Materia:** Desarrollo de Software | **Entrega:** 17 de junio de 2026
-**Stack:** Python + FastAPI | PostgreSQL | React + Vite
-**Metodología:** Scrum — Sprints quincenales
+El cliente objetivo es el profesional independiente o consultorio pequeño (médicos, psicólogos, peluquerías, estudios contables) que hoy coordina turnos por teléfono o WhatsApp manual, perdiendo tiempo y perdiendo reservas.
 
-## Equipo
+La plataforma les ofrece:
+- Un panel web para ver y administrar la agenda diaria.
+- Un chatbot de WhatsApp que atiende a los pacientes 24/7 y crea el turno directamente en la base de datos, sin intervención humana.
 
-| Integrante              | DNI        |
-| ----------------------- | ---------- |
-| Eric Cuellar            | 45.985.676 |
-| Marcelo Albarenque      | 38.406.528 |
-| Adrian Her Molins       | 32.161.709 |
-| Luciano Gabriel Zenobio | 44.598.717 |
-| Melany Lujan Sosa       | 45.192.698 |
+---
 
-## Estructura del proyecto
+## Stack tecnológico
 
-```
-Turno_IA/
-├── docs/               # Documentación funcional
-├── backend/            # API REST — Python + FastAPI
-│   ├── app/
-│   │   ├── models/     # Modelos SQLAlchemy (S1)
-│   │   ├── schemas/    # Schemas Pydantic (S1)
-│   │   ├── routers/    # Endpoints REST (S1)
-│   │   └── services/   # Lógica de negocio (S1+)
-│   └── alembic/        # Migraciones de BD
-└── frontend/           # SPA — React + Vite
-    └── src/
-        ├── pages/      # Pantallas (S3)
-        ├── components/ # Componentes reutilizables (S3)
-        ├── services/   # Llamadas HTTP (S2+)
-        └── hooks/      # Custom hooks (S3+)
-```
+| Capa | Tecnología | Por qué se eligió |
+|---|---|---|
+| Backend | Python 3.11 + FastAPI | Alto rendimiento async, tipado con Pydantic, docs automáticas con Swagger |
+| ORM / Migraciones | SQLAlchemy 2 + Alembic | Estándar de la industria en Python; migraciones declarativas |
+| Base de datos | PostgreSQL en Supabase | Gratis en tier gratuito, acceso desde cualquier entorno, compatible con Railway |
+| Frontend | React 18 + Vite | SPA moderna, HMR rápido, compatible con Vercel sin configuración |
+| Autenticación | JWT (python-jose + passlib) | Sin estado, funciona bien para APIs REST multitenancy |
+| Mensajería | Twilio WhatsApp Business API | Sandbox gratuito para desarrollo, escalable a producción |
+| Deploy Backend | Railway (rama `main`) | Deploy automático desde GitHub, soporte nativo para Python |
+| Deploy Frontend | Vercel | CDN global, deploy automático desde GitHub, preview por PR |
 
-## Requisitos previos
+---
+
+## Arquitectura
 
 ```
-Necesitás tener instalado:
-    Python 3.11+
-    PostgreSQL
-    Node.js 18+
-    Git
+Usuario web
+    └─► Vercel (React SPA)
+            └─► Railway (FastAPI) ─► Supabase (PostgreSQL)
+
+Paciente WhatsApp
+    └─► Twilio
+            └─► Railway (FastAPI) ─► Supabase (PostgreSQL)
+                  [POST /api/webhook/whatsapp]
+                  [Chatbot máquina de estados]
 ```
 
-## Setup - Levantar el proyecto en tu máquina (Sprint 0)
+El backend es el único punto de escritura en la base de datos. El frontend consume la API REST con JWT. El webhook de WhatsApp recibe los mensajes de Twilio, los procesa con una máquina de estados en memoria y crea los turnos directamente en PostgreSQL.
+
+**Multitenancy:** cada negocio tiene su propio `negocio_id`. Todas las queries filtran por `negocio_id` extraído del JWT, garantizando aislamiento de datos entre clientes.
+
+---
+
+## Cómo correr el proyecto localmente
+
+### Requisitos
+
+- Python 3.11+
+- Node.js 18+
+- Git
+- Una base de datos PostgreSQL (local o Supabase gratuito)
 
 ### Backend
 
 ```bash
-# 1. Entrar a la carpeta del servidor
-cd backend
+# 1. Clonar el repositorio
+git clone https://github.com/M-albarenque-dev/Proyecto_SaaS_IA.git
+cd Proyecto_SaaS_IA/backend
 
-# 2. Crear el entorno virtual (aislamiento de Python)
+# 2. Crear y activar el entorno virtual
 python -m venv venv
 
-# 3. Activar el entorno virtual
-# Si usas Windows (Git Bash):
+# Windows (Git Bash):
 source venv/Scripts/activate
-
-# Si usas Linux o Mac:
+# Mac / Linux:
 source venv/bin/activate
+# Confirmación: debe aparecer el prefijo (venv) en la terminal.
 
-# --- LÍNEA DE CONFIRMACIÓN ---
-# Sabrás que se activó correctamente si ves el prefijo "(venv)" al inicio de tu terminal.
-
-# 4. Instalar las librerías necesarias
+# 3. Instalar dependencias
 pip install -r requirements.txt
 
-# 5. Configurar variables de entorno
+# 4. Configurar variables de entorno
 cp .env.example .env
+# Editá .env y completá DATABASE_URL con tu conexión PostgreSQL.
 
-# Nota: Editá el archivo .env y completá DATABASE_URL con tus datos de PostgreSQL local.
-# Ejemplo: DATABASE_URL=postgresql://postgres:tu_clave@localhost:5432/nombre_db
-
-# 6. Iniciar el servidor de desarrollo
+# 5. Levantar el servidor
 uvicorn main:app --reload
 ```
 
-Verificar: `http://localhost:8000` debe responder `{"status": "ok"}`.
+Verificación: `http://localhost:8000` debe responder `{"status": "ok", "app": "TurnoIA"}`.
+Documentación interactiva: `http://localhost:8000/docs`
 
 ### Frontend
 
 ```bash
-# 1. Entrar a la carpeta de la interfaz
 cd frontend
 
-# 2. Instalar las librerías de React y dependencias
-# (Nota: Puede mostrar advertencias de paquetes antiguos, ignorarlas si termina con éxito)
+# Configurar variables de entorno
+cp .env.example .env
+# Verificar que VITE_API_URL=http://localhost:8000
+
+# Instalar dependencias
 npm install
 
-# --- LÍNEA DE CONFIRMACIÓN ---
-# Verás una carpeta llamada 'node_modules' y un mensaje: "added XXX packages".
-
-# 3. Iniciar el servidor de desarrollo
+# Levantar el servidor de desarrollo
 npm run dev
 ```
 
-Verificar: `http://localhost:5173` debe mostrar "TurnoIA — En construcción".
+Verificación: `http://localhost:5173` debe mostrar el panel de login de TurnoIA.
 
-## Workflow Diario: Cómo retomar el trabajo
+---
 
-```bash
-Nota para el equipo: Una vez realizado el Setup inicial (Sprint 0), este es el flujo de trabajo diario. No es necesario volver a crear el entorno virtual ni reinstalar dependencias.
+## Variables de entorno
 
-# 1. Levantar el Backend (Servidor)
-# Abrir una terminal en la raíz del proyecto y ejecutar:
+Las variables se configuran en `backend/.env`. Ver `backend/.env.example` para la plantilla completa.
 
-cd backend
-source venv/Scripts/activate        # Activar entorno (verificar el prefijo (venv))
-python -m uvicorn main:app --reload # Inicia el motor de la API
-Verificación: http://localhost:8000 debe responder {"status": "ok"}.
+| Variable | Descripción | Dónde obtenerla |
+|---|---|---|
+| `DATABASE_URL` | URL de conexión PostgreSQL | Supabase → Project Settings → Database → Connection string |
+| `JWT_SECRET_KEY` | Clave secreta para firmar tokens | Generar con `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `JWT_ALGORITHM` | Algoritmo de firma JWT | Dejar `HS256` |
+| `JWT_EXPIRE_MINUTES` | Expiración del token en minutos | `1440` (24 horas) por defecto |
+| `TWILIO_ACCOUNT_SID` | ID de cuenta Twilio | [console.twilio.com](https://console.twilio.com) |
+| `TWILIO_AUTH_TOKEN` | Token de autenticación Twilio | [console.twilio.com](https://console.twilio.com) |
+| `TWILIO_WHATSAPP_NUMBER` | Número del negocio (ej: `+5491112345678`) | Panel Twilio → WhatsApp Sender |
+| `TWILIO_WHATSAPP_FROM` | Número de origen Twilio Sandbox | Panel Twilio → Sandbox (ej: `whatsapp:+14155238886`) |
 
-# 2. Levantar el Frontend (Interfaz)
-# Abrir una segunda terminal y ejecutar:
+Para el frontend, configurar en `frontend/.env`:
 
-cd frontend
-npm run dev
+| Variable | Descripción |
+|---|---|
+| `VITE_API_URL` | URL base del backend (ej: `http://localhost:8000` o la URL de Railway en producción) |
 
-Verificación: http://localhost:5173 debe mostrar "TurnoIA — En construcción".                 # Inicia la interfaz de usuario
+---
 
-# 3. Cómo cerrar el proyecto (Limpieza)
+## Endpoints principales
 
-## Para evitar que los procesos queden consumiendo memoria en segundo plano:
-## En ambas terminales, presionar Ctrl + C para apagar los servidores.
-## En la terminal del Backend, escribir deactivate para cerrar el entorno virtual de Python.
+Todos los endpoints (excepto auth y webhook) requieren JWT en el header: `Authorization: Bearer <token>`.
 
-```
+| Método | Ruta | Descripción | Auth |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Registrar un nuevo negocio | No |
+| `POST` | `/api/auth/login` | Login — devuelve JWT | No |
+| `GET` | `/api/auth/me` | Datos del negocio autenticado | Sí |
+| `POST` | `/api/turnos` | Crear turno | Sí |
+| `GET` | `/api/turnos` | Listar turnos (filtros: fecha, estado, profesional) | Sí |
+| `GET` | `/api/turnos/{id}` | Obtener turno por ID | Sí |
+| `PATCH` | `/api/turnos/{id}` | Actualizar turno (estado, notas) | Sí |
+| `DELETE` | `/api/turnos/{id}` | Eliminar turno | Sí |
+| `GET` | `/api/disponibilidad` | Slots libres por profesional y fecha | Sí |
+| `GET` | `/api/profesionales` | Listar profesionales del negocio | Sí |
+| `POST` | `/api/profesionales` | Crear profesional | Sí |
+| `DELETE` | `/api/profesionales/{id}` | Eliminar profesional | Sí |
+| `GET` | `/api/clientes` | Listar clientes del negocio | Sí |
+| `POST` | `/api/clientes` | Crear cliente | Sí |
+| `DELETE` | `/api/clientes/{id}` | Eliminar cliente | Sí |
+| `POST` | `/api/webhook/whatsapp` | Recibir mensajes de Twilio WhatsApp | No (firma Twilio) |
+
+Documentación interactiva completa (con esquemas y pruebas en vivo):
+`https://proyectosaasia-production.up.railway.app/docs`
+
+---
+
+## Cuenta demo
+
+| | |
+|---|---|
+| **URL** | https://proyecto-saa-s-ia.vercel.app |
+| **Email** | admin@garcia.com |
+| **Contraseña** | demo1234 |
+
+La cuenta demo corresponde al **Consultorio Dr. García** con datos precargados: 2 profesionales, 3 clientes y 10 turnos de ejemplo.
+
+---
+
+## Estado del proyecto
+
+| Bloque | Funcionalidad | Estado |
+|---|---|---|
+| A — Panel web | Login + JWT + multitenancy | ✅ Completo |
+| A — Panel web | Agenda diaria, crear/editar/cancelar turnos | ✅ Completo |
+| B — Datos | Modelos SQLAlchemy + migraciones Alembic | ✅ Completo |
+| B — Datos | API disponibilidad (slots 30 min) | ✅ Completo |
+| B — Datos | Seed con datos demo en Supabase | ✅ Completo |
+| C — Chatbot | Webhook WhatsApp (Twilio) | ✅ Completo |
+| C — Chatbot | Máquina de estados (saludo→nombre→fecha→profesional→horario→confirmación) | ✅ Completo |
+| D — IA | Whisper STT (audio .ogg → texto) | 🔄 Pendiente |
+| D — IA | Scheduler APScheduler (recordatorio 24h antes del turno) | 🔄 Pendiente |
+
+---
+
+## Equipo
+
+| Integrante | DNI |
+|---|---|
+| Marcelo Albarenque | 38.406.528 |
+| Eric Cuellar | 45.985.676 |
+| Luciano Gabriel Zenobio | 44.598.717 |
+| Adrian Her Molins | 32.161.709 |
+| Melany Lujan Sosa | 45.192.698 |
+
+**Desarrollo de Software 2026**
