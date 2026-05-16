@@ -8,10 +8,12 @@ class Settings(BaseSettings):
     # Base de datos
     DATABASE_URL: str
 
-    # Twilio (se usa en S2)
+    # Twilio (C1 — WhatsApp webhook)
+    # TWILIO_ACCOUNT_SID y TWILIO_AUTH_TOKEN cubren twilio_account_sid/twilio_auth_token (mismo env var)
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_WHATSAPP_NUMBER: str = ""
+    twilio_whatsapp_from: str = ""  # número en formato whatsapp:+14155238886
 
     # JWT (S1)
     JWT_SECRET_KEY: str = "dev_secret_change_me"
