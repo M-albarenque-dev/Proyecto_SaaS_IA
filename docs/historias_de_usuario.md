@@ -88,3 +88,5 @@ Completar..
 ## HU-06: Panel web - Detalle de turno
 
 Completar..
+
+Completar al menos 10 HU
