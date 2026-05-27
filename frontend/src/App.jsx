@@ -9,6 +9,7 @@ function App() {
   
   // --- VIEW STATES ---
   const [activeTab, setActiveTab] = useState('login'); // 'login' or 'register'
+  const [isForgotView, setIsForgotView] = useState(false);
   
   // --- FORM STATES ---
   const [email, setEmail] = useState('');
@@ -16,6 +17,24 @@ function App() {
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPass, setRegPass] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+
+  // --- PASSWORD VISIBILITY STATES ---
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+
+  // --- FIELD ERROR STATES ---
+  const [emailErr, setEmailErr] = useState(false);
+  const [passwordErr, setPasswordErr] = useState(false);
+  const [regNameErr, setRegNameErr] = useState(false);
+  const [regEmailErr, setRegEmailErr] = useState(false);
+  const [regPassErr, setRegPassErr] = useState(false);
+  const [forgotEmailErr, setForgotEmailErr] = useState(false);
+
+  // --- INPUT REFS FOR AUTO-FOCUS ---
+  const loginEmailRef = useRef(null);
+  const registerNameRef = useRef(null);
+  const forgotEmailRef = useRef(null);
   
   // --- ACTION LOADING STATES ---
   const [actionLoading, setActionLoading] = useState(false);
@@ -50,6 +69,35 @@ function App() {
     }
     setStars(starList);
   }, []);
+
+  // --- AUTO-FOCUS & ERROR RESET EFFECT ---
+  useEffect(() => {
+    if (isAuthenticated) return;
+    
+    if (isForgotView) {
+      setTimeout(() => {
+        if (forgotEmailRef.current) forgotEmailRef.current.focus();
+      }, 50);
+    } else if (activeTab === 'login') {
+      setTimeout(() => {
+        if (loginEmailRef.current) loginEmailRef.current.focus();
+      }, 50);
+    } else {
+      setTimeout(() => {
+        if (registerNameRef.current) registerNameRef.current.focus();
+      }, 50);
+    }
+    
+    // Clear alerts on switch
+    setErrorMsg('');
+    setSuccessMsg('');
+    setEmailErr(false);
+    setPasswordErr(false);
+    setRegNameErr(false);
+    setRegEmailErr(false);
+    setRegPassErr(false);
+    setForgotEmailErr(false);
+  }, [activeTab, isForgotView, isAuthenticated]);
 
   // --- CARD PARALLAX EFFECT ---
   useEffect(() => {
@@ -168,11 +216,35 @@ function App() {
     if (e) e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    setEmailErr(false);
+    setPasswordErr(false);
     setActionLoading(true);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setEmailErr(true);
+      setErrorMsg('Por favor introduce tu dirección de email.');
+      setActionLoading(false);
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
+      setEmailErr(true);
+      setErrorMsg('Por favor introduce una dirección de email válida.');
+      setActionLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setPasswordErr(true);
+      setErrorMsg('Por favor introduce tu contraseña.');
+      setActionLoading(false);
+      return;
+    }
 
     try {
       const res = await axios.post(`${apiUrl}/auth/login`, {
-        email: email.trim(),
+        email: trimmedEmail,
         password
       });
       setToken(res.data.access_token);
@@ -181,6 +253,9 @@ function App() {
       console.error('Login error:', err);
       const msg = getErrorMessage(err, 'Las credenciales proporcionadas no son válidas.');
       setErrorMsg(msg);
+      // Highlight fields on failure
+      setEmailErr(true);
+      setPasswordErr(true);
     } finally {
       setActionLoading(false);
     }
@@ -190,16 +265,38 @@ function App() {
     if (e) e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    setRegNameErr(false);
+    setRegEmailErr(false);
+    setRegPassErr(false);
     setActionLoading(true);
 
+    const trimmedName = regName.trim();
+    const trimmedEmail = regEmail.trim();
+
+    if (!trimmedName) {
+      setRegNameErr(true);
+      setErrorMsg('Por favor introduce tu nombre completo.');
+      setActionLoading(false);
+      return;
+    }
+
+    if (!trimmedEmail || !/\S+@\S+\.\S+/.test(trimmedEmail)) {
+      setRegEmailErr(true);
+      setErrorMsg('Por favor introduce un email profesional válido.');
+      setActionLoading(false);
+      return;
+    }
+
     if (regPass.length < 8) {
+      setRegPassErr(true);
       setErrorMsg('La contraseña debe tener al menos 8 caracteres.');
       setActionLoading(false);
       return;
     }
 
-    const businessSlug = generateSlug(regName);
+    const businessSlug = generateSlug(trimmedName);
     if (!businessSlug) {
+      setRegNameErr(true);
       setErrorMsg('Por favor introduce un nombre válido.');
       setActionLoading(false);
       return;
@@ -208,9 +305,9 @@ function App() {
     try {
       // Register
       await axios.post(`${apiUrl}/auth/register`, {
-        nombre: regName.trim(),
+        nombre: trimmedName,
         slug: businessSlug,
-        email: regEmail.trim(),
+        email: trimmedEmail,
         password: regPass
       });
 
@@ -218,7 +315,7 @@ function App() {
       
       // Auto Login
       const loginRes = await axios.post(`${apiUrl}/auth/login`, {
-        email: regEmail.trim(),
+        email: trimmedEmail,
         password: regPass
       });
       setToken(loginRes.data.access_token);
@@ -226,6 +323,42 @@ function App() {
       console.error('Registration error:', err);
       const msg = getErrorMessage(err, 'El email profesional o el nombre de negocio ya se encuentra registrado.');
       setErrorMsg(msg);
+      
+      if (msg.toLowerCase().includes('email')) {
+        setRegEmailErr(true);
+      } else if (msg.toLowerCase().includes('slug') || msg.toLowerCase().includes('nombre')) {
+        setRegNameErr(true);
+      } else {
+        setRegEmailErr(true);
+        setRegNameErr(true);
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    if (e) e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+    setForgotEmailErr(false);
+    setActionLoading(true);
+
+    const trimmedEmail = forgotEmail.trim();
+    if (!trimmedEmail || !/\S+@\S+\.\S+/.test(trimmedEmail)) {
+      setForgotEmailErr(true);
+      setErrorMsg('Por favor introduce un dirección de email válida.');
+      setActionLoading(false);
+      return;
+    }
+
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setSuccessMsg('Si tu correo está registrado, recibirás un enlace de recuperación en breve.');
+      setForgotEmail('');
+    } catch (err) {
+      setErrorMsg('Ocurrió un error al enviar el correo. Inténtalo más tarde.');
     } finally {
       setActionLoading(false);
     }
@@ -238,12 +371,20 @@ function App() {
     setRegName('');
     setRegEmail('');
     setRegPass('');
+    setForgotEmail('');
     setErrorMsg('');
     setSuccessMsg('');
+    setEmailErr(false);
+    setPasswordErr(false);
+    setRegNameErr(false);
+    setRegEmailErr(false);
+    setRegPassErr(false);
+    setForgotEmailErr(false);
   };
 
   const switchTab = (tab) => {
     setActiveTab(tab);
+    setIsForgotView(false);
     setErrorMsg('');
     setSuccessMsg('');
   };
@@ -299,25 +440,49 @@ function App() {
             <div className="logo-tagline">Gestión inteligente de turnos</div>
           </div>
 
-          {/* Tabs */}
-          <div className="tabs" role="tablist">
-            <button
-              className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
-              onClick={() => switchTab('login')}
-              role="tab"
-              aria-selected={activeTab === 'login'}
-            >
-              Iniciar sesión
-            </button>
-            <button
-              className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
-              onClick={() => switchTab('register')}
-              role="tab"
-              aria-selected={activeTab === 'register'}
-            >
-              Registrarse
-            </button>
-          </div>
+          {/* Tabs / Header */}
+          {isForgotView ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
+              <button 
+                type="button"
+                onClick={() => setIsForgotView(false)} 
+                style={{
+                  background: 'rgba(0, 168, 255, 0.1)',
+                  border: '1px solid rgba(0, 168, 255, 0.2)',
+                  borderRadius: '10px',
+                  color: '#00EEFF',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  fontFamily: 'Outfit, sans-serif',
+                  outline: 'none'
+                }}
+              >
+                ← Volver
+              </button>
+              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: '700', color: '#fff' }}>Recuperar contraseña</h3>
+            </div>
+          ) : (
+            <div className="tabs" role="tablist">
+              <button
+                className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
+                onClick={() => switchTab('login')}
+                role="tab"
+                aria-selected={activeTab === 'login'}
+              >
+                Iniciar sesión
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
+                onClick={() => switchTab('register')}
+                role="tab"
+                aria-selected={activeTab === 'register'}
+              >
+                Registrarse
+              </button>
+            </div>
+          )}
 
           {/* Notifications */}
           {errorMsg && (
@@ -334,7 +499,7 @@ function App() {
           )}
 
           {/* Login Panel */}
-          {activeTab === 'login' && (
+          {!isForgotView && activeTab === 'login' && (
             <form onSubmit={handleLogin} id="panel-login">
               <div className="form-group">
                 <label className="form-label" htmlFor="email">Email</label>
@@ -346,13 +511,14 @@ function App() {
                     </svg>
                   </span>
                   <input
-                    className="form-input"
+                    ref={loginEmailRef}
+                    className={`form-input ${emailErr ? 'input-error' : ''}`}
                     type="email"
                     id="email"
                     placeholder="tu@email.com"
                     autoComplete="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); setEmailErr(false); setErrorMsg(''); }}
                     required
                   />
                 </div>
@@ -367,17 +533,36 @@ function App() {
                     </svg>
                   </span>
                   <input
-                    className="form-input"
-                    type="password"
+                    className={`form-input form-input-password ${passwordErr ? 'input-error' : ''}`}
+                    type={showPassword ? 'text' : 'password'}
                     id="password"
                     placeholder="••••••••"
                     autoComplete="current-password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); setPasswordErr(false); setErrorMsg(''); }}
                     required
                   />
+                  <button
+                    className="password-toggle-btn"
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex="-1"
+                    title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
-                <div className="forgot"><a href="#" onClick={(e) => e.preventDefault()}>¿Olvidaste tu contraseña?</a></div>
+                <div className="forgot"><a href="#" onClick={(e) => { e.preventDefault(); setIsForgotView(true); }}>¿Olvidaste tu contraseña?</a></div>
               </div>
               
               <button className="btn-primary" type="submit" disabled={actionLoading}>
@@ -411,7 +596,7 @@ function App() {
           )}
 
           {/* Register Panel */}
-          {activeTab === 'register' && (
+          {!isForgotView && activeTab === 'register' && (
             <form onSubmit={handleRegister} id="panel-register">
               <div className="form-group">
                 <label className="form-label" htmlFor="reg-name">Nombre completo</label>
@@ -423,12 +608,13 @@ function App() {
                     </svg>
                   </span>
                   <input
-                    className="form-input"
+                    ref={registerNameRef}
+                    className={`form-input ${regNameErr ? 'input-error' : ''}`}
                     type="text"
                     id="reg-name"
                     placeholder="Dr. Martín García"
                     value={regName}
-                    onChange={(e) => setRegName(e.target.value)}
+                    onChange={(e) => { setRegName(e.target.value); setRegNameErr(false); setErrorMsg(''); }}
                     required
                   />
                 </div>
@@ -443,12 +629,12 @@ function App() {
                     </svg>
                   </span>
                   <input
-                    className="form-input"
+                    className={`form-input ${regEmailErr ? 'input-error' : ''}`}
                     type="email"
                     id="reg-email"
                     placeholder="tu@consultorio.com"
                     value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
+                    onChange={(e) => { setRegEmail(e.target.value); setRegEmailErr(false); setErrorMsg(''); }}
                     required
                   />
                 </div>
@@ -463,14 +649,33 @@ function App() {
                     </svg>
                   </span>
                   <input
-                    className="form-input"
-                    type="password"
+                    className={`form-input form-input-password ${regPassErr ? 'input-error' : ''}`}
+                    type={showRegPassword ? 'text' : 'password'}
                     id="reg-pass"
                     placeholder="Mín. 8 caracteres"
                     value={regPass}
-                    onChange={(e) => setRegPass(e.target.value)}
+                    onChange={(e) => { setRegPass(e.target.value); setRegPassErr(false); setErrorMsg(''); }}
                     required
                   />
+                  <button
+                    className="password-toggle-btn"
+                    type="button"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                    tabIndex="-1"
+                    title={showRegPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showRegPassword ? (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
               <button className="btn-primary" type="submit" disabled={actionLoading}>
@@ -482,8 +687,49 @@ function App() {
             </form>
           )}
 
+          {/* Forgot Password Panel */}
+          {isForgotView && (
+            <form onSubmit={handleForgotPassword} id="panel-forgot">
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '20px', lineHeight: '1.5' }}>
+                Introduce tu correo electrónico profesional y te enviaremos un enlace seguro para restablecer tu contraseña.
+              </p>
+              <div className="form-group">
+                <label className="form-label" htmlFor="forgot-email">Email</label>
+                <div className="input-wrap">
+                  <span className="input-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                  </span>
+                  <input
+                    ref={forgotEmailRef}
+                    className={`form-input ${forgotEmailErr ? 'input-error' : ''}`}
+                    type="email"
+                    id="forgot-email"
+                    placeholder="tu@email.com"
+                    autoComplete="email"
+                    value={forgotEmail}
+                    onChange={(e) => { setForgotEmail(e.target.value); setForgotEmailErr(false); setErrorMsg(''); }}
+                    required
+                  />
+                </div>
+              </div>
+              <button className="btn-primary" type="submit" disabled={actionLoading}>
+                {actionLoading ? 'Enviando…' : 'Enviar enlace de recuperación'}
+              </button>
+            </form>
+          )}
+
           <div className="card-footer">
-            {activeTab === 'login' ? (
+            {isForgotView ? (
+              <span id="footer-text">
+                ¿Recordaste tu contraseña?{' '}
+                <a href="#" onClick={(e) => { e.preventDefault(); setIsForgotView(false); switchTab('login'); }}>
+                  Iniciá sesión
+                </a>
+              </span>
+            ) : activeTab === 'login' ? (
               <span id="footer-text">
                 ¿No tenés cuenta?{' '}
                 <a href="#" onClick={(e) => { e.preventDefault(); switchTab('register'); }}>

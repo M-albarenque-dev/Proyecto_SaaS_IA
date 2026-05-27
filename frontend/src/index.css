@@ -656,3 +656,41 @@ html, body {
 .action-button:active {
   transform: translateY(0);
 }
+
+/* ── INPUT VALIDATION & ERROR STYLES ── */
+.form-input.input-error {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.05);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1), 0 0 20px rgba(239, 68, 68, 0.15);
+}
+.form-input.input-error:focus {
+  border-color: rgba(239, 68, 68, 0.65);
+}
+.field-error-text {
+  font-size: 11px;
+  color: #ff8585;
+  margin-top: 5px;
+  display: block;
+}
+
+/* ── PASSWORD TOGGLE BUTTON ── */
+.password-toggle-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: rgba(0, 168, 255, 0.45);
+  cursor: pointer;
+  display: flex;
+  padding: 0;
+  outline: none;
+  transition: color 0.2s;
+}
+.password-toggle-btn:hover {
+  color: #00EEFF;
+}
+.form-input-password {
+  padding-right: 42px;
+}
