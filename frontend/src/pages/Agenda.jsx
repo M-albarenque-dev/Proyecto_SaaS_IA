@@ -53,11 +53,13 @@ function toISO(d){return d.toISOString().split("T")[0];}
 function hoyISO(){return new Date().toISOString().split("T")[0];}
 function diaNombre(d){return d.toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase().replace(".","");}
 function mesLabel(d){return d.toLocaleDateString("es-AR",{month:"long",year:"numeric"});}
-function formatHoraStr(str){
-  if(!str)return null;
-  try{const d=new Date(str);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
-  catch{return null;}
+function formatHoraStr(str) {
+  if (!str) return null;
+  const partes = str.split("T");
+  if (!partes[1]) return null;
+  return partes[1].slice(0, 5); // "HH:MM" directo del string, sin conversión
 }
+
 function minutosDesde8(h){if(!h)return 0;const[hh,mm]=h.split(":").map(Number);return Math.max(0,(hh-8)*60+(mm||0));}
 function useHover(){const [h,s]=useState(false);return [h,{onMouseEnter:()=>s(true),onMouseLeave:()=>s(false)}];}
 function useTheme(){
