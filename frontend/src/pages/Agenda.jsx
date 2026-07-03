@@ -832,7 +832,7 @@ function WeekView({ turnosByDate, weekStart, onEdit, onDayClick }) {
 }
 
 // ─── Vista MES ────────────────────────────────────────────────────────────────
-function MonthView({ turnosByDate, currentDate, onDayClick }) {
+function MonthView({ turnosByDate, currentDate, onDayClick, onEdit }) {
   const y = currentDate.getFullYear(),
     m = currentDate.getMonth();
   const firstDay = new Date(y, m, 1);
@@ -941,6 +941,10 @@ function MonthView({ turnosByDate, currentDate, onDayClick }) {
                 return (
                   <div
                     key={ci}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(t);
+                    }}
                     style={{
                       fontSize: 10,
                       fontWeight: 600,
@@ -952,6 +956,7 @@ function MonthView({ turnosByDate, currentDate, onDayClick }) {
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
+                      cursor: "pointer",
                     }}
                   >
                     {fmtH(t.fecha_inicio)} {t.cliente?.nombre || "—"}
@@ -1386,6 +1391,7 @@ export default function Agenda() {
               turnosByDate={turnosByDate}
               currentDate={currentDate}
               onDayClick={onDayClick}
+              onEdit={onEventEdit}
             />
           )}
         </div>
